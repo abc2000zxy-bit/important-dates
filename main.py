@@ -185,7 +185,10 @@ class AlarmScheduler:
             cal.set(Calendar.MILLISECOND, 0)
             pi = self._pending(item, next_occ(item), trig)
             try:
-                if self.am.canScheduleExactAlarms():
+                sdk = int(autoclass("android.os.Build$VERSION").SDK_INT)
+                # canScheduleExactAlarms() only exists on API 31+
+                exact_ok = sdk < 31 or self.am.canScheduleExactAlarms()
+                if exact_ok:
                     self.am.setExactAndAllowWhileIdle(
                         self.am.RTC_WAKEUP, cal.getTimeInMillis(), pi)
                 else:
