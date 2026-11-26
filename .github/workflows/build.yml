@@ -23,8 +23,20 @@ jobs:
           pip install cython==0.29.36 buildozer virtualenv
       - name: Build debug APK
         run: buildozer -v android debug
+      - name: Verify manifest has receivers and boot permission
+        run: |
+          AAPT=$(find ~/.buildozer/android/platform/android-sdk/build-tools -name aapt | sort | tail -1)
+          echo "Using $AAPT"
+          "$AAPT" dump xmltree bin/*.apk AndroidManifest.xml > manifest.txt
+          grep -q "org.importantdates.AlarmReceiver" manifest.txt || { echo "AlarmReceiver MISSING"; exit 1; }
+          grep -q "org.importantdates.BootReceiver" manifest.txt || { echo "BootReceiver MISSING"; exit 1; }
+          grep -q "android.permission.RECEIVE_BOOT_COMPLETED" manifest.txt || { echo "BOOT permission MISSING"; exit 1; }
+          grep -q "android.intent.action.BOOT_COMPLETED" manifest.txt || { echo "BOOT_COMPLETED filter MISSING"; exit 1; }
+          echo "Manifest OK"
       - uses: actions/upload-artifact@v4
         with:
           name: ImportantDates-apk
-          path: bin/*.apk
+          path: |
+            bin/*.apk
+            manifest.txt
           if-no-files-found: error
